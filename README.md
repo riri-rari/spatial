@@ -1,5 +1,8 @@
 # spatial
-Transcriptome-scale spatial expression analysis codes
+Transcriptome-scale spatial expression analysis codes.
+
+
+
 This respository contains the R codes used for analysis of trascriptome data of DLPFC from the spatialLIBD package. 
 Data are about 12 samples belonging to three independet subjects. For each subject two pairs of replicates at a distance of 300 um have been taken. Intrapair replicates are at a distance of 10 um. 10x Genomics Visium technology is used to produce spiatially characterized trascriptome data.   
 
