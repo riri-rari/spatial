@@ -1,0 +1,2584 @@
+---
+title: "Untitled"
+author: "3/3/22"
+date: '2022-05-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load the general plots for the genes
+```{r}
+
+```
+
+
+Read the necessary information from the Spot-level.R file  
+```{r chunk-a, ref.label= c('chunck-b', 'chunck-c')}
+library(gstat)
+library(sp)
+source('column_cluster.R')
+```
+## H-scattergrams
+### H-scattergram at mean level 
+```{r, Hscat_mean, ref.label= 'apply_hm'}
+h_scat_mean_no_Y <- function(frame){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  #Create the SPatialPointsDataFrame object to be used in the gstat formula 
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #gstat formula 
+  #try_gstat <- gstat(id = 'v_means', formula = means ~ 1, data = v_means_spatial)
+  #Putative graphic 
+  #breaks è l'intervallo di distanza che vuoi plottare: quindi rappresenti i punti che sono distanti nel range che specifichi.
+  #Ex. break = c(137,138) sono i punti che sono distanti tra 137(in) e 138 (out) --> ti serve la dist(coordinates(v_means_spatial)) 
+  #Find the range of the distance 
+  starting <- as.integer(range(dist(coordinates(v_means_spatial)))[1])
+  stopping <- as.integer(range(dist(coordinates(v_means_spatial)))[2])
+  #(start + 1), (start + 10), (start + 150), (start + 550), (start + 1750), (start + 4750), (start + stop)
+  hscat(means~1, v_means_spatial, breaks = c((starting), (starting + 1), (starting + 10), (starting + (mean(c(starting, stopping)))/4), (starting + (mean(c(starting, stopping)))/2), 
+                                             (starting + (mean(c(starting, stopping)))/1),
+                                             (starting + (mean(c(starting, stopping)))*1.25), (starting + (mean(c(starting, stopping)))*1.5),
+                                             (stopping)), cex = 0.1)
+}
+h_scat_mean_layer <- function(frame, layer){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  frame <- frame[frame$Layer == layer, ] #filter the frame according to the layer of interest --> so you can apply further computations as it is the completed set of values 
+  frame <- frame[complete.cases(frame), ]
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  #Create the SPatialPointsDataFrame object to be used in the gstat formula 
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #gstat formula 
+  #try_gstat <- gstat(id = 'v_means', formula = means ~ 1, data = v_means_spatial)
+  #Putative graphic 
+  #breaks è l'intervallo di distanza che vuoi plottare: quindi rappresenti i punti che sono distanti nel range che specifichi.
+  #Ex. break = c(137,138) sono i punti che sono distanti tra 137(in) e 138 (out) --> ti serve la dist(coordinates(v_means_spatial)) 
+  #Find the range of the distance 
+  starting <- as.integer(range(dist(coordinates(v_means_spatial)))[1])
+  stopping <- as.integer(range(dist(coordinates(v_means_spatial)))[2])
+  #(start + 1), (start + 10), (start + 150), (start + 550), (start + 1750), (start + 4750), (start + stop)
+  hscat(means~1, v_means_spatial, breaks = c((starting), (starting + 1), (starting + 10), (starting + (mean(c(starting, stopping)))/4), (starting + (mean(c(starting, stopping)))/2), 
+                                             (starting + (mean(c(starting, stopping)))/1),
+                                             (starting + (mean(c(starting, stopping)))*1.25), (starting + (mean(c(starting, stopping)))*1.5),
+                                             (stopping)), pch = 3, cex = 0.1) 
+  # mtext('Subject 1 Pos 0 rep 0 L1', side = 1, line = 6, cex = 0.8, adj = 0 )
+  #  textplot(tex, halign = "center")
+  
+}
+```
+### H-scattergram of spots
+```{r, Hscat, ref.label='apply_h'}
+h_scat_all <- function(frame){
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_data <- data.frame(list(frame$Expr),list(frame$x),list(frame$y))
+  names(v_data) <- c('Expr', 'x', 'y')
+  #Create the SPatialPointsDataFrame object to be used in the gstat formula 
+  my_xy <- v_data[, c(2,3)]
+  v_data_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_data)
+  starting <- as.integer(range(dist(coordinates(v_data_spatial)))[1])
+  stopping <- as.integer(range(dist(coordinates(v_data_spatial)))[2])
+  #(start + 1), (start + 10), (start + 150), (start + 550), (start + 1750), (start + 4750), (start + stop)
+  hscat(Expr~1, v_data_spatial, breaks = c(137, 138, 200, 300, 600, 1000, 1500) )
+}
+
+h_scat_layer <- function(frame, layer){
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('Expr', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Putative graphic 
+  #breaks è l'intervallo di distanza che vuoi plottare: quindi rappresenti i punti che sono distanti nel range che specifichi.
+  #Ex. break = c(137,138) sono i punti che sono distanti tra 137(in) e 138 (out) --> ti serve la dist(coordinates(v_means_spatial)) 
+  #Find the range of the distance 
+  starting <- as.integer(range(dist(coordinates(v_means_spatial)))[1])
+  stopping <- as.integer(range(dist(coordinates(v_means_spatial)))[2])
+  #(start + 1), (start + 10), (start + 150), (start + 550), (start + 1750), (start + 4750), (start + stop)
+  hscat(Expr~1, v_means_spatial, breaks = c((starting), (starting + 1), (starting + 10), (starting + (mean(c(starting, stopping)))/4), (starting + (mean(c(starting, stopping)))/2), 
+                                             (starting + (mean(c(starting, stopping)))/1),
+                                             (starting + (mean(c(starting, stopping)))*1.25), (starting + (mean(c(starting, stopping)))*1.5),
+                                             (stopping)) )
+}
+```
+
+
+##Variograms 
+###Variograms of points mean 
+```{r, var_mean, ref.label='apply_vm'}
+var_mean <- function(frame, cutof = 4500, width_in = 300){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Plot the variogram --> average dissimilarity for each given set of distances 
+  #cutof <- 4500
+  vario <- variogram(means~1, v_means_spatial, cutoff = cutof, width = width_in)
+  plot(vario, main = paste('Mean_semivariogram up to', cutof, sep = '_'))
+}
+var_mean_layer <- function(frame, layer, cutof = 4500, width_in = 300){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Semivariogram plot 
+  #cutof <- 4500
+  vario <- variogram(means~1, v_means_spatial, cutoff = cutof, width = width_in)
+  plot(vario, main = paste(layer,  paste('Mean_Semivariogram up to', cutof, sep = '_' ), sep = '_' ) )
+}  
+
+```
+Directional variograms mean
+```{r, dir_var_mean, ref.label='apply_dvm'}
+dir_var_mean <- function(frame, cutof = 4500, width_in = 300){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  
+ #Plot the directionalily analysis
+  var <- variogram(means~1, data = v_means_spatial, map = TRUE, cutoff = cutof, width = width_in) #cutoff per la distanza a dx e sx, width per la grandezza dei quadrati(quindi quanto sono grossi i subsets?)
+  plot(var, main = paste('Mean_directional_semivariogram up to', cutof, sep = '_'))
+}  
+dir_var_mean_layer <- function(frame, layer, cutof = 4500, width_in = 300){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Plot the directionalily analysis
+  var <- variogram(means~1, data = v_means_spatial, map = TRUE, cutoff = cutof, width = width_in) #cutoff per la distanza a dx e sx, width per la grandezza dei quadrati(quindi quanto sono grossi i subsets?)
+  plot(var, main = paste('Mean_directional_semivariogram up to', cutof, sep = '_'))
+  
+}
+```
+Asinogram mean 
+```{r, asi_var_mean, ref.label='apply_asivm'}
+asi_var_mean <- function(frame, cutof = 4500, width_in = 300){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+#Plot the putative dependence on direction
+  #gstat formula --> gstat element 
+  try_gstat <- gstat(id = 'v_means', formula = means ~ 1, data = v_means_spatial)
+  var_ani_g <- variogram(try_gstat, alpha = c(0,45,90,135)) #build the variogram element with the gstat element 
+  plot(var_ani_g,  main = paste('Mean_anisogram up to', cutof, sep = '_') )
+  
+}
+asi_var_mean_layer <- function(frame, layer, cutof = 4500, width_in = 300){
+  means <- NULL
+  x.coord <- NULL
+  y.coord <- NULL
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  columns <- names(table(frame$Column))
+  for (value in  columns){
+    means <- append(means, mean(frame[frame$Column == value, ]$Expr))
+    x.coord <- append(x.coord, frame[frame$Column == value , ][1, ]$x)
+    y.coord <- append(y.coord, frame[frame$Column == value , ][1,]$y)
+  }
+  #take the x-coord and y-coord of the first spot of the column. Expr is the means. --> nrows = length(means)
+  v_means <- data.frame(list(means),list(x.coord), list(y.coord))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  
+  #Plot the putative dependence on direction
+  #gstat formula --> gstat element 
+  try_gstat <- gstat(id = 'v_means', formula = means ~ 1, data = v_means_spatial)
+  var_ani_g <- variogram(try_gstat, alpha = c(0,45,90,135)) #build the variogram element with the gstat element 
+  #The tol.hor and tol.ver are those of default --> X +/- (angle/2)
+  plot(var_ani_g, main = paste(layer, paste('Mean_anisogram up to', cutof, sep = '_'), sep = '_'))
+
+}
+```
+### Variograms of spots 
+```{r,  var, ref.label='apply_sv'}
+var <- function(frame, cutof = 4500, width_in = 300){
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  
+  #Plot the variogram --> average dissimilarity for each given set of distances 
+  #Plot the variogram --> average dissimilarity for each given set of distances 
+  #Cutoff (massimo valore di distanza), width (lunghezza bins), alpha : 0 --> north (y), 90 --> east (x)
+  #cutof <- 4500
+  vario <- variogram(means~1, v_means_spatial, cutoff = cutof, width = width_in)
+  plot(vario, main = paste('Semivariogram up to', cutof, sep = '_' ) )
+  
+}
+
+
+
+
+var_layer <- function(frame,layer, cutof = 4500, width_in = 300){
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+
+  #Plot the variogram --> average dissimilarity for each given set of distances 
+  #Cutoff (massimo valore di distanza), width (grandezza bins), alpha : 0 --> north (y), 90 --> east (x)
+  #cutof <- 4500
+  vario <- variogram(means~1, v_means_spatial, cutoff = cutof, width = width_in, alpha = 0)
+  plot(vario, main = paste(layer, paste('semivariogram up to', cutof, sep = '_'), sep = '_') )
+
+}
+```
+Directional
+```{r,  dvar, ref.label='apply_dvar'}
+dvar <- function(frame, cutof = 4500, width_in = 300){
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Plot the directionalily analysis
+  var <- variogram(means~1, data = v_means_spatial, map = TRUE, cutoff = cutof, width = width_in) #cutoff per la distanza a dx e sx, width per la grandezza dei quadrati
+  plot(var, main = paste('Directional semivariogram', cutof, sep = '_'))
+}
+
+
+dvar_layer <- function(frame, layer, cutof = 4500, width_in = 300){
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Plot the directionalily analysis
+  var <- variogram(means~1, data = v_means_spatial, map = TRUE, cutoff = cutof, width = width_in) #cutoff per la distanza a dx e sx, width per la grandezza dei quadrati (width of subsequent distance intervals)
+  plot(var, main = paste(layer, paste('directional semivariogram up to', cutof, sep = '_'), sep = '_') )
+}  
+  
+```
+Asinogram
+```{r,  asi_var, ref.label='apply_asiv'}
+asi_var <- function(frame, cutof = 4500, width_in = 300){
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Plot the putative dependence on direction
+  #gstat formula --> gstat element 
+  try_gstat <- gstat(id = 'v_means', formula = means ~ 1, data = v_means_spatial)
+  var_ani_g <- variogram(try_gstat, alpha = c(0,45,90,135)) #build the variogram element with the gstat element 
+  #The tol.hor and tol.ver are those of default --> X +/- (angle/2)
+  plot(var_ani_g, main = paste('Anisogram up to', cutof, sep = '_'))
+}
+
+
+asi_var_layer <- function(frame, layer, cutof = 4500, width_in = 300){  
+  frame <- frame[frame$Layer == layer, ]
+  frame <- frame[complete.cases(frame), ]
+  v_means <- data.frame(list(frame$Expr),list(frame$x), list(frame$y))
+  names(v_means) <- c('means', 'x', 'y')
+  my_xy <- v_means[, c(2,3)]
+  v_means_spatial <- SpatialPointsDataFrame(coords = my_xy, data = v_means)
+  #Plot the putative dependence on direction
+  #gstat formula --> gstat element 
+  try_gstat <- gstat(id = 'v_means', formula = means ~ 1, data = v_means_spatial)
+  var_ani_g <- variogram(try_gstat, alpha = c(0,45,90,135)) #build the variogram element with the gstat element 
+  #The tol.hor and tol.ver are those of default --> X +/- (angle/2)
+  plot(var_ani_g,  main = paste(layer, paste('anisogram up to', cutof, sep = '_'), sep = '_') )
+}
+```
+
+Su SNAP25 possiamo dire che c'è una possibile spiegazine della mancanza di correlazine in GM (no L1) e della correlazione in L1 e WM: è un marcatore in GM con poca espressione in WM e L1 mentre negli altri Layers è molto espresso. Per quanto riguarda la il fattore di correlazione rho: non sembra essere partciolarmente forte ma ci sono delle differenze tra i layers 
+
+
+###Compute plots only on first and third patients. these patients are comparable for age but are of opposite sex (Br5292 is MALE while Br8100 is FEMALE). We compare these two because the other one (Br5595 MALE) lacks annotation in Layers 1 and 2. The computation is performed in the replicates (single) and accounts for the mean and the single expression of the genes of intrest. With this analysi we can see how the same gene is expressed in different samples of a) same patient b) different subjects. It is possibile to fix the sample and investigate how diferent genes are expressed.
+SNAP5, MOBP and IGKC investigated 
+
+#### Fix the sample and compute the Hscat for mean of different genes 
+
+Position 0 replicate 0 in patient Br5292
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_1_SNAP25)
+h_scat_mean_no_Y(frame_1_MOBP)
+h_scat_mean_no_Y(frame_1_IGKC)
+```
+Position 0 replicate 1 in patient Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_1_SNAP25)
+h_scat_mean_no_Y(frame_1_MOBP)
+h_scat_mean_no_Y(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_1_SNAP25)
+h_scat_mean_no_Y(frame_1_MOBP)
+h_scat_mean_no_Y(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_1_SNAP25)
+h_scat_mean_no_Y(frame_1_MOBP)
+h_scat_mean_no_Y(frame_1_IGKC)
+```
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_2_SNAP25)
+h_scat_mean_no_Y(frame_2_MOBP)
+h_scat_mean_no_Y(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_2_SNAP25)
+h_scat_mean_no_Y(frame_2_MOBP)
+h_scat_mean_no_Y(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_2_SNAP25)
+h_scat_mean_no_Y(frame_2_MOBP)
+h_scat_mean_no_Y(frame_2_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_no_Y(frame_2_SNAP25)
+h_scat_mean_no_Y(frame_2_MOBP)
+h_scat_mean_no_Y(frame_2_IGKC)
+```
+
+
+
+#### Fix the sample and compute the Hscat for mean of different genes at layer level 
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_layer(frame_1_SNAP25, 'L1')
+h_scat_mean_layer(frame_1_MOBP, 'L1')
+h_scat_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L2')
+h_scat_mean_layer(frame_1_MOBP, 'L2')
+h_scat_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L3')
+h_scat_mean_layer(frame_1_MOBP, 'L3')
+h_scat_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L4')
+h_scat_mean_layer(frame_1_MOBP, 'L4')
+h_scat_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L5')
+h_scat_mean_layer(frame_1_MOBP, 'L5')
+h_scat_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L6')
+h_scat_mean_layer(frame_1_MOBP, 'L6')
+h_scat_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'WM')
+h_scat_mean_layer(frame_1_MOBP, 'WM')
+h_scat_mean_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292
+
+Layer 1
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_layer(frame_1_SNAP25, 'L1')
+h_scat_mean_layer(frame_1_MOBP, 'L1')
+h_scat_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L2')
+h_scat_mean_layer(frame_1_MOBP, 'L2')
+h_scat_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L3')
+h_scat_mean_layer(frame_1_MOBP, 'L3')
+h_scat_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L4')
+h_scat_mean_layer(frame_1_MOBP, 'L4')
+h_scat_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5 
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L5')
+h_scat_mean_layer(frame_1_MOBP, 'L5')
+h_scat_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'L6')
+h_scat_mean_layer(frame_1_MOBP, 'L6')
+h_scat_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+h_scat_mean_layer(frame_1_SNAP25, 'WM')
+h_scat_mean_layer(frame_1_MOBP, 'WM')
+h_scat_mean_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_layer(frame_2_SNAP25, 'L1')
+h_scat_mean_layer(frame_2_MOBP, 'L1')
+h_scat_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L2')
+h_scat_mean_layer(frame_2_MOBP, 'L2')
+h_scat_mean_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L3')
+h_scat_mean_layer(frame_2_MOBP, 'L3')
+h_scat_mean_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L4')
+h_scat_mean_layer(frame_2_MOBP, 'L4')
+h_scat_mean_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L5')
+h_scat_mean_layer(frame_2_MOBP, 'L5')
+h_scat_mean_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L6')
+h_scat_mean_layer(frame_2_MOBP, 'L6')
+h_scat_mean_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'WM')
+h_scat_mean_layer(frame_2_MOBP, 'WM')
+h_scat_mean_layer(frame_2_IGKC, 'WM')
+```
+
+-----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_mean_layer(frame_2_SNAP25, 'L1')
+h_scat_mean_layer(frame_2_MOBP, 'L1')
+h_scat_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L2')
+h_scat_mean_layer(frame_2_MOBP, 'L2')
+h_scat_mean_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L3')
+h_scat_mean_layer(frame_2_MOBP, 'L3')
+h_scat_mean_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L4')
+h_scat_mean_layer(frame_2_MOBP, 'L4')
+h_scat_mean_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L5')
+h_scat_mean_layer(frame_2_MOBP, 'L5')
+h_scat_mean_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'L6')
+h_scat_mean_layer(frame_2_MOBP, 'L6')
+h_scat_mean_layer(frame_2_IGKC, 'L6')
+```
+Layer WM
+```{r}
+h_scat_mean_layer(frame_2_SNAP25, 'WM')
+h_scat_mean_layer(frame_2_MOBP, 'WM')
+h_scat_mean_layer(frame_2_IGKC, 'WM')
+```
+
+
+#### Fix the sample and compute the Variograms for mean expression  
+Position 0 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_1_SNAP25)
+var_mean(frame_1_MOBP)
+var_mean(frame_1_IGKC)
+```
+Position 0 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_1_SNAP25)
+var_mean(frame_1_MOBP)
+var_mean(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_1_SNAP25)
+var_mean(frame_1_MOBP)
+var_mean(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_1_SNAP25)
+var_mean(frame_1_MOBP)
+var_mean(frame_1_IGKC)
+```
+
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_2_SNAP25)
+var_mean(frame_2_MOBP)
+var_mean(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_2_SNAP25)
+var_mean(frame_2_MOBP)
+var_mean(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_1_SNAP25)
+var_mean(frame_1_MOBP)
+var_mean(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean(frame_2_SNAP25)
+var_mean(frame_2_MOBP)
+var_mean(frame_2_IGKC)
+```
+
+
+#### Fix the sample and compute the Variograms for mean expression at layer level 
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean_layer(frame_1_SNAP25, 'L1')
+var_mean_layer(frame_1_MOBP, 'L1')
+var_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L2')
+var_mean_layer(frame_1_MOBP, 'L2')
+var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L3')
+var_mean_layer(frame_1_MOBP, 'L3')
+var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L4')
+var_mean_layer(frame_1_MOBP, 'L4')
+var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L5')
+var_mean_layer(frame_1_MOBP, 'L5')
+var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L6')
+var_mean_layer(frame_1_MOBP, 'L6')
+var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+var_mean_layer(frame_1_SNAP25, 'WM')
+var_mean_layer(frame_1_MOBP, 'WM')
+var_mean_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292
+
+Layer 1
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean_layer(frame_1_SNAP25, 'L1')
+var_mean_layer(frame_1_MOBP, 'L1')
+var_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L2')
+var_mean_layer(frame_1_MOBP, 'L2')
+var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L3')
+var_mean_layer(frame_1_MOBP, 'L3')
+var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L4')
+var_mean_layer(frame_1_MOBP, 'L4')
+var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L5')
+var_mean_layer(frame_1_MOBP, 'L5')
+var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L6')
+var_mean_layer(frame_1_MOBP, 'L6')
+var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+var_mean_layer(frame_1_SNAP25, 'WM')
+var_mean_layer(frame_1_MOBP, 'WM')
+var_mean_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean_layer(frame_2_SNAP25, 'L1')
+var_mean_layer(frame_2_MOBP, 'L1')
+var_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L2')
+var_mean_layer(frame_1_MOBP, 'L2')
+var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L3')
+var_mean_layer(frame_1_MOBP, 'L3')
+var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L4')
+var_mean_layer(frame_1_MOBP, 'L4')
+var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L5')
+var_mean_layer(frame_1_MOBP, 'L5')
+var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L6')
+var_mean_layer(frame_1_MOBP, 'L6')
+var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+var_mean_layer(frame_1_SNAP25, 'WM')
+var_mean_layer(frame_1_MOBP, 'WM')
+var_mean_layer(frame_1_IGKC, 'WM')
+```
+
+-----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_mean_layer(frame_2_SNAP25, 'L1')
+var_mean_layer(frame_2_MOBP, 'L1')
+var_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L2')
+var_mean_layer(frame_1_MOBP, 'L2')
+var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L3')
+var_mean_layer(frame_1_MOBP, 'L3')
+var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L4')
+var_mean_layer(frame_1_MOBP, 'L4')
+var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L5')
+var_mean_layer(frame_1_MOBP, 'L5')
+var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_mean_layer(frame_1_SNAP25, 'L6')
+var_mean_layer(frame_1_MOBP, 'L6')
+var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+var_mean_layer(frame_1_SNAP25, 'WM')
+var_mean_layer(frame_1_MOBP, 'WM')
+var_mean_layer(frame_1_IGKC, 'WM')
+```
+
+
+#### Fix the sample and compute the Directional variograms for mean expression 
+Position 0 replicate 0 in patient Br5292
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_1_SNAP25)
+dir_var_mean(frame_1_MOBP)
+dir_var_mean(frame_1_IGKC)
+```
+Position 0 replicate 1 in patient Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_1_SNAP25)
+dir_var_mean(frame_1_MOBP)
+dir_var_mean(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_1_SNAP25)
+dir_var_mean(frame_1_MOBP)
+dir_var_mean(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_1_SNAP25)
+dir_var_mean(frame_1_MOBP)
+dir_var_mean(frame_1_IGKC)
+```
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_2_SNAP25)
+dir_var_mean(frame_2_MOBP)
+dir_var_mean(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_2_SNAP25)
+dir_var_mean(frame_2_MOBP)
+dir_var_mean(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_2_SNAP25)
+dir_var_mean(frame_2_MOBP)
+dir_var_mean(frame_2_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean(frame_2_SNAP25)
+dir_var_mean(frame_2_MOBP)
+dir_var_mean(frame_2_IGKC)
+```
+
+#### Fix the sample and compute the Directional variogram for mean gene espression (layer level)
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean_layer(frame_1_SNAP25, 'L1')
+dir_var_mean_layer(frame_1_MOBP, 'L1')
+dir_var_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L2')
+dir_var_mean_layer(frame_1_MOBP, 'L2')
+dir_var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L3')
+dir_var_mean_layer(frame_1_MOBP, 'L3')
+dir_var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L4')
+dir_var_mean_layer(frame_1_MOBP, 'L4')
+dir_var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L5')
+dir_var_mean_layer(frame_1_MOBP, 'L5')
+dir_var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L6')
+dir_var_mean_layer(frame_1_MOBP, 'L6')
+dir_var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'WM')
+dir_var_mean_layer(frame_1_MOBP, 'WM')
+dir_var_mean_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292
+
+Layer 1
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean_layer(frame_1_SNAP25, 'L1')
+dir_var_mean_layer(frame_1_MOBP, 'L1')
+dir_var_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L2')
+dir_var_mean_layer(frame_1_MOBP, 'L2')
+dir_var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L3')
+dir_var_mean_layer(frame_1_MOBP, 'L3')
+dir_var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L4')
+dir_var_mean_layer(frame_1_MOBP, 'L4')
+dir_var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L5')
+dir_var_mean_layer(frame_1_MOBP, 'L5')
+dir_var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'L6')
+dir_var_mean_layer(frame_1_MOBP, 'L6')
+dir_var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+dir_var_mean_layer(frame_1_SNAP25, 'WM')
+dir_var_mean_layer(frame_1_MOBP, 'WM')
+dir_var_mean_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean_layer(frame_2_SNAP25, 'L1')
+dir_var_mean_layer(frame_2_MOBP, 'L1')
+dir_var_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L2')
+dir_var_mean_layer(frame_2_MOBP, 'L2')
+dir_var_mean_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L3')
+dir_var_mean_layer(frame_2_MOBP, 'L3')
+dir_var_mean_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L4')
+dir_var_mean_layer(frame_2_MOBP, 'L4')
+dir_var_mean_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L5')
+dir_var_mean_layer(frame_2_MOBP, 'L5')
+dir_var_mean_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L6')
+dir_var_mean_layer(frame_2_MOBP, 'L6')
+dir_var_mean_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'WM')
+dir_var_mean_layer(frame_2_MOBP, 'WM')
+dir_var_mean_layer(frame_2_IGKC, 'WM')
+```
+
+-----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dir_var_mean_layer(frame_2_SNAP25, 'L1')
+dir_var_mean_layer(frame_2_MOBP, 'L1')
+dir_var_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L2')
+dir_var_mean_layer(frame_2_MOBP, 'L2')
+dir_var_mean_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L3')
+dir_var_mean_layer(frame_2_MOBP, 'L3')
+dir_var_mean_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L4')
+dir_var_mean_layer(frame_2_MOBP, 'L4')
+dir_var_mean_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L5')
+dir_var_mean_layer(frame_2_MOBP, 'L5')
+dir_var_mean_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'L6')
+dir_var_mean_layer(frame_2_MOBP, 'L6')
+dir_var_mean_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+dir_var_mean_layer(frame_2_SNAP25, 'WM')
+dir_var_mean_layer(frame_2_MOBP, 'WM')
+dir_var_mean_layer(frame_2_IGKC, 'WM')
+```
+
+#### Fix the sample and compute the Asinigram for mean expression
+
+Position 0 replicate 0 in patient Br5292
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_1_SNAP25)
+asi_var_mean(frame_1_MOBP)
+asi_var_mean(frame_1_IGKC)
+```
+Position 0 replicate 1 in patient Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_1_SNAP25)
+asi_var_mean(frame_1_MOBP)
+asi_var_mean(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_1_SNAP25)
+asi_var_mean(frame_1_MOBP)
+asi_var_mean(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_1_SNAP25)
+asi_var_mean(frame_1_MOBP)
+asi_var_mean(frame_1_IGKC)
+```
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_2_SNAP25)
+asi_var_mean(frame_2_MOBP)
+asi_var_mean(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_2_SNAP25)
+asi_var_mean(frame_2_MOBP)
+asi_var_mean(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_2_SNAP25)
+asi_var_mean(frame_2_MOBP)
+asi_var_mean(frame_2_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean(frame_2_SNAP25)
+asi_var_mean(frame_2_MOBP)
+asi_var_mean(frame_2_IGKC)
+```
+
+#### Fix the sample and compute the Asinogram for mean expression at layer level
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean_layer(frame_1_SNAP25, 'L1')
+asi_var_mean_layer(frame_1_MOBP, 'L1')
+asi_var_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L2')
+asi_var_mean_layer(frame_1_MOBP, 'L2')
+asi_var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L3')
+asi_var_mean_layer(frame_1_MOBP, 'L3')
+asi_var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L4')
+asi_var_mean_layer(frame_1_MOBP, 'L4')
+asi_var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L5')
+asi_var_mean_layer(frame_1_MOBP, 'L5')
+asi_var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L6')
+asi_var_mean_layer(frame_1_MOBP, 'L6')
+asi_var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'WM')
+asi_var_mean_layer(frame_1_MOBP, 'WM')
+asi_var_mean_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean_layer(frame_1_SNAP25, 'L1')
+asi_var_mean_layer(frame_1_MOBP, 'L1')
+asi_var_mean_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L2')
+asi_var_mean_layer(frame_1_MOBP, 'L2')
+asi_var_mean_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L3')
+asi_var_mean_layer(frame_1_MOBP, 'L3')
+asi_var_mean_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L4')
+asi_var_mean_layer(frame_1_MOBP, 'L4')
+asi_var_mean_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L5')
+asi_var_mean_layer(frame_1_MOBP, 'L5')
+asi_var_mean_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'L6')
+asi_var_mean_layer(frame_1_MOBP, 'L6')
+asi_var_mean_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+asi_var_mean_layer(frame_1_SNAP25, 'WM')
+asi_var_mean_layer(frame_1_MOBP, 'WM')
+asi_var_mean_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean_layer(frame_2_SNAP25, 'L1')
+asi_var_mean_layer(frame_2_MOBP, 'L1')
+asi_var_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L2')
+asi_var_mean_layer(frame_2_MOBP, 'L2')
+asi_var_mean_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L3')
+asi_var_mean_layer(frame_2_MOBP, 'L3')
+asi_var_mean_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L4')
+asi_var_mean_layer(frame_2_MOBP, 'L4')
+asi_var_mean_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L5')
+asi_var_mean_layer(frame_2_MOBP, 'L5')
+asi_var_mean_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L6')
+asi_var_mean_layer(frame_2_MOBP, 'L6')
+asi_var_mean_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'WM')
+asi_var_mean_layer(frame_2_MOBP, 'WM')
+asi_var_mean_layer(frame_2_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_mean_layer(frame_2_SNAP25, 'L1')
+asi_var_mean_layer(frame_2_MOBP, 'L1')
+asi_var_mean_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L2')
+asi_var_mean_layer(frame_2_MOBP, 'L2')
+asi_var_mean_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L3')
+asi_var_mean_layer(frame_2_MOBP, 'L3')
+asi_var_mean_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L4')
+asi_var_mean_layer(frame_2_MOBP, 'L4')
+asi_var_mean_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L5')
+asi_var_mean_layer(frame_2_MOBP, 'L5')
+asi_var_mean_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'L6')
+asi_var_mean_layer(frame_2_MOBP, 'L6')
+asi_var_mean_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+asi_var_mean_layer(frame_2_SNAP25, 'WM')
+asi_var_mean_layer(frame_2_MOBP, 'WM')
+asi_var_mean_layer(frame_2_IGKC, 'WM')
+```
+
+
+
+#### Fix the sample and compute the Hscat for expression of different genes at layer level (spots)
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_layer(frame_1_SNAP25, 'L1')
+h_scat_layer(frame_1_MOBP, 'L1')
+h_scat_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L2')
+h_scat_layer(frame_1_MOBP, 'L2')
+h_scat_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L3')
+h_scat_layer(frame_1_MOBP, 'L3')
+h_scat_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L4')
+h_scat_layer(frame_1_MOBP, 'L4')
+h_scat_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L5')
+h_scat_layer(frame_1_MOBP, 'L5')
+h_scat_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L6')
+h_scat_layer(frame_1_MOBP, 'L6')
+h_scat_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+h_scat_layer(frame_1_SNAP25, 'WM')
+h_scat_layer(frame_1_MOBP, 'WM')
+h_scat_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292
+
+Layer 1
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_layer(frame_1_SNAP25, 'L1')
+h_scat_layer(frame_1_MOBP, 'L1')
+h_scat_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L2')
+h_scat_layer(frame_1_MOBP, 'L2')
+h_scat_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L3')
+h_scat_layer(frame_1_MOBP, 'L3')
+h_scat_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L4')
+h_scat_layer(frame_1_MOBP, 'L4')
+h_scat_layer(frame_1_IGKC, 'L4')
+```
+Layer 5 
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L5')
+h_scat_layer(frame_1_MOBP, 'L5')
+h_scat_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_layer(frame_1_SNAP25, 'L6')
+h_scat_layer(frame_1_MOBP, 'L6')
+h_scat_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+h_scat_layer(frame_1_SNAP25, 'WM')
+h_scat_layer(frame_1_MOBP, 'WM')
+h_scat_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_layer(frame_2_SNAP25, 'L1')
+h_scat_layer(frame_2_MOBP, 'L1')
+h_scat_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L2')
+h_scat_layer(frame_2_MOBP, 'L2')
+h_scat_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L3')
+h_scat_layer(frame_2_MOBP, 'L3')
+h_scat_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L4')
+h_scat_layer(frame_2_MOBP, 'L4')
+h_scat_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L5')
+h_scat_layer(frame_2_MOBP, 'L5')
+h_scat_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L6')
+h_scat_layer(frame_2_MOBP, 'L6')
+h_scat_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+h_scat_layer(frame_2_SNAP25, 'WM')
+h_scat_layer(frame_2_MOBP, 'WM')
+h_scat_layer(frame_2_IGKC, 'WM')
+```
+
+-----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+h_scat_layer(frame_2_SNAP25, 'L1')
+h_scat_layer(frame_2_MOBP, 'L1')
+h_scat_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L2')
+h_scat_layer(frame_2_MOBP, 'L2')
+h_scat_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L3')
+h_scat_layer(frame_2_MOBP, 'L3')
+h_scat_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L4')
+h_scat_layer(frame_2_MOBP, 'L4')
+h_scat_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L5')
+h_scat_layer(frame_2_MOBP, 'L5')
+h_scat_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+h_scat_layer(frame_2_SNAP25, 'L6')
+h_scat_layer(frame_2_MOBP, 'L6')
+h_scat_layer(frame_2_IGKC, 'L6')
+```
+Layer WM
+```{r}
+h_scat_layer(frame_2_SNAP25, 'WM')
+h_scat_layer(frame_2_MOBP, 'WM')
+h_scat_layer(frame_2_IGKC, 'WM')
+```
+
+
+#### Fix the sample and compute the Variograms for expression  
+Position 0 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_1_SNAP25)
+var(frame_1_MOBP)
+var(frame_1_IGKC)
+```
+Position 0 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_1_SNAP25)
+var(frame_1_MOBP)
+var(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_1_SNAP25)
+var(frame_1_MOBP)
+var(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_1_SNAP25)
+var(frame_1_MOBP)
+var(frame_1_IGKC)
+```
+
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_2_SNAP25)
+var(frame_2_MOBP)
+var(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_2_SNAP25)
+var(frame_2_MOBP)
+var(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_2_SNAP25)
+var(frame_2_MOBP)
+var(frame_2_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var(frame_2_SNAP25)
+var(frame_2_MOBP)
+var(frame_2_IGKC)
+```
+
+
+#### FIx the sample and compute the Variogram at layer level 
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_layer(frame_1_SNAP25, 'L1')
+var_layer(frame_1_MOBP, 'L1')
+var_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_layer(frame_1_SNAP25, 'L2')
+var_layer(frame_1_MOBP, 'L2')
+var_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_layer(frame_1_SNAP25, 'L3')
+var_layer(frame_1_MOBP, 'L3')
+var_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_layer(frame_1_SNAP25, 'L4')
+var_layer(frame_1_MOBP, 'L4')
+var_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_layer(frame_1_SNAP25, 'L5')
+var_layer(frame_1_MOBP, 'L5')
+var_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_layer(frame_1_SNAP25, 'L6')
+var_layer(frame_1_MOBP, 'L6')
+var_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+var_layer(frame_1_SNAP25, 'WM')
+var_layer(frame_1_MOBP, 'WM')
+var_layer(frame_1_IGKC, 'WM')
+```
+
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292
+
+Layer 1
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_layer(frame_1_SNAP25, 'L1')
+var_layer(frame_1_MOBP, 'L1')
+var_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_layer(frame_1_SNAP25, 'L2')
+var_layer(frame_1_MOBP, 'L2')
+var_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_layer(frame_1_SNAP25, 'L3')
+var_layer(frame_1_MOBP, 'L3')
+var_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_layer(frame_1_SNAP25, 'L4')
+var_layer(frame_1_MOBP, 'L4')
+var_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_layer(frame_1_SNAP25, 'L5')
+var_layer(frame_1_MOBP, 'L5')
+var_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_layer(frame_1_SNAP25, 'L6')
+var_layer(frame_1_MOBP, 'L6')
+var_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+var_layer(frame_1_SNAP25, 'WM')
+var_layer(frame_1_MOBP, 'WM')
+var_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_layer(frame_2_SNAP25, 'L1')
+var_layer(frame_2_MOBP, 'L1')
+var_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_layer(frame_1_SNAP25, 'L2')
+var_layer(frame_1_MOBP, 'L2')
+var_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_layer(frame_1_SNAP25, 'L3')
+var_layer(frame_1_MOBP, 'L3')
+var_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_layer(frame_1_SNAP25, 'L4')
+var_layer(frame_1_MOBP, 'L4')
+var_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_layer(frame_1_SNAP25, 'L5')
+var_layer(frame_1_MOBP, 'L5')
+var_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_layer(frame_1_SNAP25, 'L6')
+var_layer(frame_1_MOBP, 'L6')
+var_layer(frame_1_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+var_layer(frame_1_SNAP25, 'WM')
+var_layer(frame_1_MOBP, 'WM')
+var_layer(frame_1_IGKC, 'WM')
+```
+
+-----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+var_layer(frame_2_SNAP25, 'L1')
+var_layer(frame_2_MOBP, 'L1')
+var_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+var_layer(frame_1_SNAP25, 'L2')
+var_layer(frame_1_MOBP, 'L2')
+var_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+var_layer(frame_1_SNAP25, 'L3')
+var_layer(frame_1_MOBP, 'L3')
+var_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+var_layer(frame_1_SNAP25, 'L4')
+var_layer(frame_1_MOBP, 'L4')
+var_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+var_layer(frame_1_SNAP25, 'L5')
+var_layer(frame_1_MOBP, 'L5')
+var_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+var_layer(frame_1_SNAP25, 'L6')
+var_layer(frame_1_MOBP, 'L6')
+var_layer(frame_1_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+var_layer(frame_1_SNAP25, 'WM')
+var_layer(frame_1_MOBP, 'WM')
+var_layer(frame_1_IGKC, 'WM')
+```
+
+#### Fix the sample ad compute the Directional variogram for the expression 
+Position 0 replicate 0 in patient Br5292
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_1_SNAP25)
+dvar(frame_1_MOBP)
+dvar(frame_1_IGKC)
+```
+Position 0 replicate 1 in patient Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_1_SNAP25)
+dvar(frame_1_MOBP)
+dvar(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_1_SNAP25)
+dvar(frame_1_MOBP)
+dvar(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_1_SNAP25)
+dvar(frame_1_MOBP)
+dvar(frame_1_IGKC)
+```
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_2_SNAP25)
+dvar(frame_2_MOBP)
+dvar(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_2_SNAP25)
+dvar(frame_2_MOBP)
+dvar(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_2_SNAP25)
+dvar(frame_2_MOBP)
+dvar(frame_2_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar(frame_2_SNAP25)
+dvar(frame_2_MOBP)
+dvar(frame_2_IGKC)
+```
+
+#### Fix the sample and compute the Directional variogram for expression (layer level)
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar_layer(frame_1_SNAP25, 'L1')
+dvar_layer(frame_1_MOBP, 'L1')
+dvar_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dvar_layer(frame_1_SNAP25, 'L2')
+dvar_layer(frame_1_MOBP, 'L2')
+dvar_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dvar_layer(frame_1_SNAP25, 'L3')
+dvar_layer(frame_1_MOBP, 'L3')
+dvar_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dvar_layer(frame_1_SNAP25, 'L4')
+dvar_layer(frame_1_MOBP, 'L4')
+dvar_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dvar_layer(frame_1_SNAP25, 'L5')
+dvar_layer(frame_1_MOBP, 'L5')
+dvar_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dvar_layer(frame_1_SNAP25, 'L6')
+dvar_layer(frame_1_MOBP, 'L6')
+dvar_layer(frame_1_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+dvar_layer(frame_1_SNAP25, 'WM')
+dvar_layer(frame_1_MOBP, 'WM')
+dvar_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292
+
+Layer 1
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+
+dvar_layer(frame_1_SNAP25, 'L1')
+dvar_layer(frame_1_MOBP, 'L1')
+dvar_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dvar_layer(frame_1_SNAP25, 'L2')
+dvar_layer(frame_1_MOBP, 'L2')
+dvar_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dvar_layer(frame_1_SNAP25, 'L3')
+dvar_layer(frame_1_MOBP, 'L3')
+dvar_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dvar_layer(frame_1_SNAP25, 'L4')
+dvar_layer(frame_1_MOBP, 'L4')
+dvar_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dvar_layer(frame_1_SNAP25, 'L5')
+dvar_layer(frame_1_MOBP, 'L5')
+dvar_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dvar_layer(frame_1_SNAP25, 'L6')
+dvar_layer(frame_1_MOBP, 'L6')
+dvar_layer(frame_1_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+dvar_layer(frame_1_SNAP25, 'WM')
+dvar_layer(frame_1_MOBP, 'WM')
+dvar_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+dvar_layer(frame_2_SNAP25, 'L1')
+dvar_layer(frame_2_MOBP, 'L1')
+dvar_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dvar_layer(frame_2_SNAP25, 'L2')
+dvar_layer(frame_2_MOBP, 'L2')
+dvar_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dvar_layer(frame_2_SNAP25, 'L3')
+dvar_layer(frame_2_MOBP, 'L3')
+dvar_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dvar_layer(frame_2_SNAP25, 'L4')
+dvar_layer(frame_2_MOBP, 'L4')
+dvar_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dvar_layer(frame_2_SNAP25, 'L5')
+dvar_layer(frame_2_MOBP, 'L5')
+dvar_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dvar_layer(frame_2_SNAP25, 'L6')
+dvar_layer(frame_2_MOBP, 'L6')
+dvar_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+dvar_layer(frame_2_SNAP25, 'WM')
+dvar_layer(frame_2_MOBP, 'WM')
+dvar_layer(frame_2_IGKC, 'WM')
+```
+
+-----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+
+dvar_layer(frame_2_SNAP25, 'L1')
+dvar_layer(frame_2_MOBP, 'L1')
+dvar_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+dvar_layer(frame_2_SNAP25, 'L2')
+dvar_layer(frame_2_MOBP, 'L2')
+dvar_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+dvar_layer(frame_2_SNAP25, 'L3')
+dvar_layer(frame_2_MOBP, 'L3')
+dvar_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+dvar_layer(frame_2_SNAP25, 'L4')
+dvar_layer(frame_2_MOBP, 'L4')
+dvar_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+dvar_layer(frame_2_SNAP25, 'L5')
+dvar_layer(frame_2_MOBP, 'L5')
+dvar_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+dvar_layer(frame_2_SNAP25, 'L6')
+dvar_layer(frame_2_MOBP, 'L6')
+dvar_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+dvar_layer(frame_2_SNAP25, 'WM')
+dvar_layer(frame_2_MOBP, 'WM')
+dvar_layer(frame_2_IGKC, 'WM')
+```
+
+
+#### Fix the sample and compute the Asinogram 
+
+Position 0 replicate 0 in patient Br5292
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_1_SNAP25)
+asi_var(frame_1_MOBP)
+asi_var(frame_1_IGKC)
+```
+Position 0 replicate 1 in patient Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[2], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[2], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[2], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_1_SNAP25)
+asi_var(frame_1_MOBP)
+asi_var(frame_1_IGKC)
+```
+Position 300 replicate 0 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_1_SNAP25)
+asi_var(frame_1_MOBP)
+asi_var(frame_1_IGKC)
+```
+Position 300 replicate 1 in Br5292
+```{r}
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[4], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[4], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[4], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_1_SNAP25)
+asi_var(frame_1_MOBP)
+asi_var(frame_1_IGKC)
+```
+Position 0 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_2_SNAP25)
+asi_var(frame_2_MOBP)
+asi_var(frame_2_IGKC)
+```
+Position 0 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[6], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[6], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[6], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_2_SNAP25)
+asi_var(frame_2_MOBP)
+asi_var(frame_2_IGKC)
+```
+Position 300 replicate 0 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_2_SNAP25)
+asi_var(frame_2_MOBP)
+asi_var(frame_2_IGKC)
+```
+Position 300 replicate 1 in Br8100
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[8], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[8], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[8], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var(frame_2_SNAP25)
+asi_var(frame_2_MOBP)
+asi_var(frame_2_IGKC)
+```
+
+#### Fix the sample and compute the Asinogram at layer level
+Position 0 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[1], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[1], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[1], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_layer(frame_1_SNAP25, 'L1')
+asi_var_layer(frame_1_MOBP, 'L1')
+asi_var_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L2')
+asi_var_layer(frame_1_MOBP, 'L2')
+asi_var_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L3')
+asi_var_layer(frame_1_MOBP, 'L3')
+asi_var_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L4')
+asi_var_layer(frame_1_MOBP, 'L4')
+asi_var_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L5')
+asi_var_layer(frame_1_MOBP, 'L5')
+asi_var_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L6')
+asi_var_layer(frame_1_MOBP, 'L6')
+asi_var_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+asi_var_layer(frame_1_SNAP25, 'WM')
+asi_var_layer(frame_1_MOBP, 'WM')
+asi_var_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------
+Position 300 replicate 0 in Br5292 
+
+Layer 1
+```{r}
+id <- c("151507","151508", "151509", "151510", "151673", "151674", "151675", "151676")
+#Pos 0 rep 0
+frame_1_SNAP25 <- frame_SNAP25_all[grepl(id[3], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_1_MOBP <- frame_MOBP_all[grepl(id[3], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_1_IGKC <- frame_IGKC_all[grepl(id[3], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_layer(frame_1_SNAP25, 'L1')
+asi_var_layer(frame_1_MOBP, 'L1')
+asi_var_layer(frame_1_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L2')
+asi_var_layer(frame_1_MOBP, 'L2')
+asi_var_layer(frame_1_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L3')
+asi_var_layer(frame_1_MOBP, 'L3')
+asi_var_layer(frame_1_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L4')
+asi_var_layer(frame_1_MOBP, 'L4')
+asi_var_layer(frame_1_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L5')
+asi_var_layer(frame_1_MOBP, 'L5')
+asi_var_layer(frame_1_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_layer(frame_1_SNAP25, 'L6')
+asi_var_layer(frame_1_MOBP, 'L6')
+asi_var_layer(frame_1_IGKC, 'L6')
+```
+Layer WM
+```{r}
+asi_var_layer(frame_1_SNAP25, 'WM')
+asi_var_layer(frame_1_MOBP, 'WM')
+asi_var_layer(frame_1_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 0 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[5], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[5], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[5], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_layer(frame_2_SNAP25, 'L1')
+asi_var_layer(frame_2_MOBP, 'L1')
+asi_var_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L2')
+asi_var_layer(frame_2_MOBP, 'L2')
+asi_var_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L3')
+asi_var_layer(frame_2_MOBP, 'L3')
+asi_var_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L4')
+asi_var_layer(frame_2_MOBP, 'L4')
+asi_var_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L5')
+asi_var_layer(frame_2_MOBP, 'L5')
+asi_var_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L6')
+asi_var_layer(frame_2_MOBP, 'L6')
+asi_var_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+asi_var_layer(frame_2_SNAP25, 'WM')
+asi_var_layer(frame_2_MOBP, 'WM')
+asi_var_layer(frame_2_IGKC, 'WM')
+```
+----------------------------------------------------------------------------------------
+Position 300 replicate 0 in Br8100
+
+Layer 1
+```{r}
+frame_2_SNAP25 <- frame_SNAP25_all[grepl(id[7], as.character(frame_SNAP25_all$ID), fixed = TRUE), ]
+frame_2_MOBP <- frame_MOBP_all[grepl(id[7], as.character(frame_MOBP_all$ID), fixed = TRUE), ]
+frame_2_IGKC <- frame_IGKC_all[grepl(id[7], as.character(frame_IGKC_all$ID), fixed = TRUE), ]
+
+asi_var_layer(frame_2_SNAP25, 'L1')
+asi_var_layer(frame_2_MOBP, 'L1')
+asi_var_layer(frame_2_IGKC, 'L1')
+```
+Layer 2
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L2')
+asi_var_layer(frame_2_MOBP, 'L2')
+asi_var_layer(frame_2_IGKC, 'L2')
+```
+Layer 3
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L3')
+asi_var_layer(frame_2_MOBP, 'L3')
+asi_var_layer(frame_2_IGKC, 'L3')
+```
+Layer 4
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L4')
+asi_var_layer(frame_2_MOBP, 'L4')
+asi_var_layer(frame_2_IGKC, 'L4')
+```
+Layer 5
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L5')
+asi_var_layer(frame_2_MOBP, 'L5')
+asi_var_layer(frame_2_IGKC, 'L5')
+```
+Layer 6
+```{r}
+asi_var_layer(frame_2_SNAP25, 'L6')
+asi_var_layer(frame_2_MOBP, 'L6')
+asi_var_layer(frame_2_IGKC, 'L6')
+```
+Layer WM 
+```{r}
+asi_var_layer(frame_2_SNAP25, 'WM')
+asi_var_layer(frame_2_MOBP, 'WM')
+asi_var_layer(frame_2_IGKC, 'WM')
+```
+
