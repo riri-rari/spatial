@@ -257,7 +257,7 @@ plot_it(samples_3_300, 'Mean_subj_Br8100_300', gene)
 
 
 
-
+'''
 
 ##Prepare a common frame --> extract layer-spots ####
 #layer_spot function works on modified colData(spe) and extract all the spots at layer level 
@@ -313,20 +313,4 @@ compute_means <-- function(spot_frame){
   names(means) <- c('all_samples', '1_4', '2_4', '3_4', '1_2_0', '1_2_300', '2_2_0', '2_2_300', '3_2_0', '3_2_300')
   return(means)
 }
-
-
-
-
-##STuuf to be discussed ####
-#Coordinates to be used --> of which subject?
-#The problem with assignment of layers --> what to do at the margins? --> 
-#Example with 12 samples mean computation --> report the max_voted spot layer 
-#[1] 4 6 
-#[1] 3
-#[1] 6 7
-#[1] 3 4 5 6 7
-#[1] 6
-#So the computation is precise at spot level --> that spot experienced that measure 
-#But the layer is not always the same --> maybe the tissue positioned differently or just different 
-#How to deal? remove the spots that have not the concordance? Order by layer and see if for that spot at tat layer u have n obs? --> then how many obs u have?
-#sparse matrices 
+'''
